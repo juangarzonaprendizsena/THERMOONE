@@ -491,7 +491,7 @@ if sb:
         r = sb.table("eventos").select("created_at").eq("tipo", "riego").order("created_at", desc=True).limit(1).execute().data
         if r:
             ultimo_riego = pd.Timestamp(r[0]["created_at"]).timestamp()
-    except Exception as e:
+    except Exception as e: 
         print("DB:", e)
 
 if __name__ == "__main__":
