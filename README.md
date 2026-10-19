@@ -123,8 +123,6 @@ Para ver el puerto del ESP32 en Windows, abre el **Administrador de dispositivos
 ```bash
 python app.py
 ```
-Comando para el tunel : cloudflared tunnel --url http://localhost:5000
-
 Abre `http://localhost:5000`, inicia sesión y el panel cargará. Cuando el ESP32 esté conectado, el indicador de arriba pasará a **ESP32 conectado**. El botón **Salir** cierra la sesión.
 
 ### Secciones del panel
