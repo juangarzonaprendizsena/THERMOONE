@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THERMOONE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,sans-serif;background:#0b1220;color:#e6edf7;padding:20px;max-width:980px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+h1{font-size:28px;letter-spacing:3px;background:linear-gradient(90deg,#38bdf8,#34d399);-webkit-background-clip:text;color:transparent}
+.pill{padding:6px 14px;border-radius:99px;font-size:13px;background:#3b1d24;color:#fca5a5}
+.pill.on{background:#12352b;color:#6ee7b7}
+nav{display:flex;gap:8px;margin-bottom:18px}
+nav button,.btn{border:0;border-radius:12px;padding:11px 18px;font-size:15px;cursor:pointer;background:#16213a;color:#cbd5e1;transition:.2s}
+nav button.act{background:#38bdf8;color:#04121f;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.card{background:#111a2e;border:1px solid #1e2a47;border-radius:18px;padding:18px;text-align:center}
+.card h3{font-size:13px;color:#94a3b8;font-weight:500;margin-bottom:8px}
+.big{font-size:26px;font-weight:700}
+svg.ring{width:120px;height:120px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9;stroke-linecap:round}
+.ring .bg{stroke:#1e2a47}
+.ring .fg{stroke-dasharray:251;stroke-dashoffset:251;transition:stroke-dashoffset .8s}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.btn{padding:16px;font-weight:600}
+.btn:hover{transform:translateY(-2px)}
+.btn.riego{background:#0ea5e9;color:#04121f}
+.btn.on{background:#34d399;color:#04121f}
+.btn.luz.on{background:#60a5fa}
+.sec{display:none}.sec.act{display:block}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px;text-align:right;border-bottom:1px solid #1e2a47}
+th:first-child,td:first-child{text-align:left}
+th{color:#94a3b8;font-weight:500}
+.msg{color:#94a3b8;padding:20px;text-align:center}
+.stat{font-size:22px;font-weight:700;color:#38bdf8}
+.cfg{text-align:left;margin-bottom:14px}
+.cfg h2{font-size:16px;color:#38bdf8;margin-bottom:10px}
+.fld{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid #1e2a47}
+.fld:last-child{border-bottom:0}
+.fld small{display:block;color:#94a3b8;font-size:12px;margin-top:3px;max-width:520px}
+.inp{display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:13px;white-space:nowrap}
+.inp input[type=number]{width:110px;background:#0b1220;border:1px solid #2a3a60;border-radius:8px;color:#e6edf7;padding:8px;font-size:15px}
+.inp input[type=time]{width:140px;background:#0b1220;border:1px solid #2a3a60;border-radius:8px;color:#e6edf7;padding:8px;font-size:15px}
+.inp input[type=checkbox]{width:22px;height:22px;accent-color:#34d399}
+.acciones{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn.guardar{background:#34d399;color:#04121f}
+#cfgMsg{font-size:14px}
+#cfgMsg.err{color:#fca5a5}#cfgMsg.ok{color:#6ee7b7}
+@media(max-width:640px){
+body{padding:14px}
+h1{font-size:22px;letter-spacing:2px}
+nav{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+nav button{padding:12px 8px;font-size:14px}
+.grid{grid-template-columns:1fr 1fr;gap:10px}
+.card{padding:12px}
+svg.ring{width:92px;height:92px}
+.big{font-size:21px}
+#hace{margin-top:24px!important}
+.ctl{grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:14px 8px;font-size:14px}
+.fld{flex-direction:column;align-items:stretch;gap:10px}
+.fld small{max-width:none}
+.inp{justify-content:flex-start}
+.inp input[type=number],.inp input[type=time]{width:100%;max-width:160px}
+.acciones .btn{flex:1 1 100%}
+th,td{padding:7px 5px;font-size:12px}
+.stat{font-size:18px}
+}
+</style>
+</head>
+<body>
+<header><h1>THERMOONE</h1><span id="con" class="pill">Desconectado</span></header>
+<nav>
+  <button class="act" data-s="panel">Panel en vivo</button>
+  <button data-s="datos">Datos guardados</button>
+  <button data-s="calc">Análisis</button>
+  <button data-s="config">Configuración</button>
+</nav>
+
+<section id="panel" class="sec act">
+  <div class="grid">
+    <div class="card"><h3>Temperatura</h3><svg class="ring" viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="40"/><circle id="rt" class="fg" cx="50" cy="50" r="40" stroke="#f97316"/></svg><div class="big" id="vt">--</div></div>
+    <div class="card"><h3>Humedad del aire</h3><svg class="ring" viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="40"/><circle id="rh" class="fg" cx="50" cy="50" r="40" stroke="#38bdf8"/></svg><div class="big" id="vh">--</div></div>
+    <div class="card"><h3>Humedad del suelo</h3><svg class="ring" viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="40"/><circle id="rs" class="fg" cx="50" cy="50" r="40" stroke="#34d399"/></svg><div class="big" id="vs">--</div></div>
+    <div class="card"><h3>Último riego</h3><div class="big" id="hace" style="margin-top:38px">--</div><div id="estsuelo" style="color:#94a3b8;margin-top:8px"></div></div>
+  </div>
+  <div class="ctl">
+    <button class="btn riego" onclick="cmd('riego')">Regar ahora</button>
+    <button class="btn" id="bF" onclick="tog('F')">Ventilador</button>
+    <button class="btn luz" id="bL" onclick="tog('L')">Luz azul</button>
+    <button class="btn" id="bA" onclick="tog('A')">Modo automático</button>
+  </div>
+</section>
+
+<section id="datos" class="sec"><div class="card" style="overflow-x:auto"><div id="tabla" class="msg">Cargando...</div></div></section>
+
+<section id="calc" class="sec">
+  <div id="stats" class="grid"></div>
+  <div class="card"><canvas id="graf" height="120"></canvas></div>
+</section>
+
+<section id="config" class="sec">
+  <p class="msg" style="padding:0 0 14px;text-align:left">Estos parámetros se aplican con el <b>Modo automático</b> encendido y se guardan aunque se reinicie el programa. Cada campo muestra su valor por defecto.</p>
+  <div id="cfgForm"></div>
+  <div class="acciones">
+    <button class="btn guardar" onclick="guardarCfg(false)">Guardar cambios</button>
+    <button class="btn" onclick="guardarCfg(true)">Restaurar valores por defecto</button>
+    <span id="cfgMsg"></span>
+  </div>
+</section>
+
+<script>
+let est = {}, chart, cfgSch = null;
+const $ = id => document.getElementById(id);
+function ring(id, v, max){ $(id).style.strokeDashoffset = 251 * (1 - Math.max(0, Math.min(1, v / max))); }
+async function cmd(c){
+  const r = await (await fetch('/api/cmd', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cmd:c})})).json();
+  if(!r.ok) alert('No se pudo ejecutar: revisa que el ESP32 esté conectado y que bomba y ventilador no estén encendidos a la vez.');
+  refrescar();
+}
+function tog(k){ const on = k=='F'?est.fan : k=='L'?est.luz : est.auto; cmd(k + (on ? '0' : '1')); }
+function tiempo(s){
+  if(s == null) return 'Sin registro';
+  if(s < 60) return 'hace ' + s + ' s';
+  if(s < 3600) return 'hace ' + Math.floor(s/60) + ' min';
+  return 'hace ' + Math.floor(s/3600) + ' h ' + Math.floor(s%3600/60) + ' min';
+}
+async function refrescar(){
+  try { est = await (await fetch('/api/estado')).json(); } catch(e){ est = {conectado:false}; }
+  $('con').textContent = est.conectado ? 'ESP32 conectado' : 'Desconectado';
+  $('con').className = 'pill' + (est.conectado ? ' on' : '');
+  if(est.temp === undefined) return;
+  $('vt').textContent = est.temp + ' °C'; ring('rt', est.temp, 50);
+  $('vh').textContent = est.hum + ' %'; ring('rh', est.hum, 100);
+  $('vs').textContent = est.suelo_pct + ' %'; ring('rs', est.suelo_pct, 100);
+  $('estsuelo').textContent = est.suelo_pct < (est.umbral ?? 30) ? 'Suelo seco' : est.suelo_pct < 70 ? 'Suelo en buen estado' : 'Suelo muy húmedo';
+  $('hace').textContent = tiempo(est.hace_riego);
+  $('bF').className = 'btn' + (est.fan ? ' on' : ''); $('bF').textContent = 'Ventilador: ' + (est.fan ? 'ON' : 'OFF');
+  $('bL').className = 'btn luz' + (est.luz ? ' on' : ''); $('bL').textContent = 'Luz azul: ' + (est.luz ? 'ON' : 'OFF');
+  $('bA').className = 'btn' + (est.auto ? ' on' : ''); $('bA').textContent = 'Automático: ' + (est.auto ? 'ON' : 'OFF');
+}
+async function datos(){
+  const r = await (await fetch('/api/historial')).json();
+  if(r.error || !r.filas.length){ $('tabla').textContent = r.error || 'Aún no hay registros'; return; }
+  const f = d => new Date(d).toLocaleString('es-CO');
+  $('tabla').className = '';
+  $('tabla').innerHTML = '<table><tr><th>Fecha</th><th>Temp °C</th><th>Aire %</th><th>Suelo %</th><th>Bomba</th><th>Fan</th><th>Luz</th></tr>' +
+    r.filas.map(x => `<tr><td>${f(x.created_at)}</td><td>${x.temp}</td><td>${x.hum}</td><td>${x.suelo_pct}</td><td>${x.bomba?'ON':'-'}</td><td>${x.fan?'ON':'-'}</td><td>${x.luz?'ON':'-'}</td></tr>`).join('') + '</table>';
+}
+async function calculos(){
+  const r = await (await fetch('/api/analisis')).json();
+  if(r.error){ $('stats').innerHTML = '<div class="msg">' + r.error + '</div>'; return; }
+  const c = [['Temp. promedio', r.temp_prom + ' °C'], ['Máx / Mín', r.temp_max + ' / ' + r.temp_min + ' °C'], ['Humedad aire prom.', r.hum_prom + ' %'],
+    ['Humedad suelo prom.', r.suelo_prom + ' %'], ['Tendencia temp.', r.tendencia + ' °C/h'], ['Proyección en 1 h', r.proyeccion + ' °C'],
+    ['Riegos hoy', r.riegos_hoy], ['Ventilador encendido', r.pct_fan + ' % del tiempo']];
+  $('stats').innerHTML = c.map(([a, b]) => `<div class="card"><h3>${a}</h3><div class="stat">${b}</div></div>`).join('');
+  const ds = (l, d, col) => ({label:l, data:d, borderColor:col, tension:.35, pointRadius:0});
+  if(chart) chart.destroy();
+  chart = new Chart($('graf'), {type:'line', data:{labels:r.serie.x, datasets:[ds('Temp °C', r.serie.temp, '#f97316'), ds('Aire %', r.serie.hum, '#38bdf8'), ds('Suelo %', r.serie.suelo, '#34d399')]},
+    options:{plugins:{legend:{labels:{color:'#cbd5e1'}}}, scales:{x:{ticks:{color:'#94a3b8'}}, y:{ticks:{color:'#94a3b8'}, grid:{color:'#1e2a47'}}}}});
+}
+function campo(c, val){
+  const fd = x => c.tipo == 'bool' ? (x ? 'Sí' : 'No') : x + (c.unidad ? ' ' + c.unidad : '');
+  const id = 'c_' + c.clave;
+  const inp = c.tipo == 'bool' ? `<input type="checkbox" id="${id}" ${val ? 'checked' : ''}>`
+    : c.tipo == 'time' ? `<input type="time" id="${id}" value="${val}">`
+    : `<input type="number" id="${id}" value="${val}" min="${c.min}" max="${c.max}" step="${c.tipo == 'int' ? 1 : 0.5}">`;
+  return `<label class="fld"><div><b>${c.etiqueta}</b><small>${c.ayuda} Por defecto: ${fd(c.defecto)}.</small></div><div class="inp">${inp}<span>${c.tipo == 'bool' ? '' : c.unidad}</span></div></label>`;
+}
+function pintarCfg(){
+  const grupos = [...new Set(cfgSch.campos.map(c => c.grupo))];
+  $('cfgForm').innerHTML = grupos.map(g => `<div class="card cfg"><h2>${g}</h2>` +
+    cfgSch.campos.filter(c => c.grupo == g).map(c => campo(c, cfgSch.valores[c.clave])).join('') + '</div>').join('');
+}
+async function config(){
+  try { cfgSch = await (await fetch('/api/config')).json(); pintarCfg(); }
+  catch(e){ $('cfgForm').innerHTML = '<div class="msg">No se pudo cargar la configuración</div>'; }
+}
+async function guardarCfg(reset){
+  if(!cfgSch) return;
+  if(reset && !confirm('¿Restaurar todos los parámetros a sus valores por defecto?')) return;
+  const body = {};
+  if(!reset) for(const c of cfgSch.campos){
+    const e = $('c_' + c.clave);
+    body[c.clave] = c.tipo == 'bool' ? e.checked : c.tipo == 'time' ? e.value : (e.value === '' ? null : Number(e.value));
+  }
+  const m = $('cfgMsg');
+  try {
+    const res = await fetch(reset ? '/api/config/reset' : '/api/config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const r = await res.json();
+    if(!r.ok){ m.className = 'err'; m.textContent = (r.errores || ['Error al guardar']).join(' · '); return; }
+    cfgSch.valores = r.valores; pintarCfg();
+    m.className = 'ok'; m.textContent = reset ? 'Valores por defecto restaurados' : 'Configuración guardada';
+    setTimeout(() => { m.textContent = ''; }, 4000);
+  } catch(e){ m.className = 'err'; m.textContent = 'No se pudo conectar con el servidor'; }
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button,.sec').forEach(e => e.classList.remove('act'));
+  b.classList.add('act'); $(b.dataset.s).classList.add('act');
+  if(b.dataset.s == 'datos') datos(); if(b.dataset.s == 'calc') calculos(); if(b.dataset.s == 'config') config();
+});
+setInterval(refrescar, 1000); refrescar();
+</script>
+</body>
+</html>

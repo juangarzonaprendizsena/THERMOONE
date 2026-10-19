@@ -1,0 +1,14 @@
+# Secretos
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Sistema y editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,19 @@
+{
+  "riego_por_humedad": true,
+  "umbral_riego": 30,
+  "objetivo_pct": 60,
+  "riego_s": 5,
+  "espera_min": 10,
+  "riego_por_tiempo": false,
+  "intervalo_min": 360,
+  "fan_auto": true,
+  "t_fan_on": 28.0,
+  "t_fan_off": 26.0,
+  "manual_min": 5,
+  "luz_auto": false,
+  "luz_on": "18:00",
+  "luz_off": "06:00",
+  "guardar_s": 180,
+  "suelo_seco": 4095,
+  "suelo_humedo": 2500
+}
