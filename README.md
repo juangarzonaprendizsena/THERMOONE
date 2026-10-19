@@ -105,7 +105,7 @@ cp .env.example .env         # En Windows: copy .env.example .env
 | `PUERTO` | Puerto serie del ESP32 (USB o el COM de Bluetooth) | `COM8` |
 | `PANEL_USER` | Usuario para entrar al panel | `admin` |
 | `PANEL_PASSWORD` | Contraseña del panel. Usa una larga y aleatoria | *(tu contraseña)* |
-| `SECRET_KEY` | Clave que firma las cookies de sesión | *(valor aleatorio)* |
+| `SECRET_KEY` | Clave que firma las cookies de sesión | *(valor aleatorio)* | 
 
 Puedes generar valores seguros para la contraseña y la clave de sesión con:
 
