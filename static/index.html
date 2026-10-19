@@ -72,8 +72,7 @@ th,td{padding:7px 5px;font-size:12px}
 </style>
 </head>
 <body>
-<header><h1>THERMOONE</h1><span id="con" class="pill">Desconectado</span></header>
-<nav>
+<header><h1>THERMOONE</h1><div style="display:flex;gap:10px;align-items:center"><span id="con" class="pill">Desconectado</span><button class="btn" onclick="salir()" style="padding:6px 14px;font-size:13px">Salir</button></div></header><nav>
   <button class="act" data-s="panel">Panel en vivo</button>
   <button data-s="datos">Datos guardados</button>
   <button data-s="calc">Análisis</button>
@@ -128,8 +127,10 @@ function tiempo(s){
   if(s < 3600) return 'hace ' + Math.floor(s/60) + ' min';
   return 'hace ' + Math.floor(s/3600) + ' h ' + Math.floor(s%3600/60) + ' min';
 }
+async function salir(){ await fetch('/api/logout', {method:'POST'}); location.href = '/login'; }
 async function refrescar(){
   try { est = await (await fetch('/api/estado')).json(); } catch(e){ est = {conectado:false}; }
+  if(est.error === 'No autorizado'){ location.href = '/login'; return; }
   $('con').textContent = est.conectado ? 'ESP32 conectado' : 'Desconectado';
   $('con').className = 'pill' + (est.conectado ? ' on' : '');
   if(est.temp === undefined) return;

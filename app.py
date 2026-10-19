@@ -1,8 +1,8 @@
-import os, re, json, time, threading, queue
+import os, re, json, time, threading, queue, hmac, secrets
 from pathlib import Path
 import serial, numpy as np, pandas as pd
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session, redirect
 
 load_dotenv()
 PUERTO = os.getenv("PUERTO", "COM8")  # USB para probar; luego el COM Bluetooth
@@ -132,6 +132,66 @@ lock_ser = threading.Lock()
 cola_bd = queue.Queue(maxsize=500)
 TZ = "America/Bogota"
 
+# ---- Login con sesión ----
+USUARIO = os.getenv("PANEL_USER", "admin")
+CLAVE = os.getenv("PANEL_PASSWORD")
+app.secret_key = os.getenv("SECRET_KEY") or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PERMANENT_SESSION_LIFETIME=60 * 60 * 12,  # la sesión dura 12 horas
+)
+if not CLAVE:
+    print("AVISO: PANEL_PASSWORD no está definida; el panel queda SIN protección.")
+if not os.getenv("SECRET_KEY"):
+    print("AVISO: SECRET_KEY no definida; las sesiones se cerrarán al reiniciar.")
+
+intentos = {}  # ip -> (fallos, bloqueado_hasta)
+
+
+@app.before_request
+def proteger():
+    if not CLAVE or request.path in ("/login", "/api/login"):
+        return None
+    if session.get("ok"):
+        return None
+    if request.path.startswith("/api/"):
+        return jsonify(error="No autorizado"), 401
+    return redirect("/login")
+
+
+@app.get("/login")
+def pagina_login():
+    if session.get("ok") or not CLAVE:
+        return redirect("/")
+    return send_from_directory("static", "login.html")
+
+
+@app.post("/api/login")
+def api_login():
+    ip = request.headers.get("CF-Connecting-IP", request.remote_addr)
+    fallos, hasta = intentos.get(ip, (0, 0))
+    if time.time() < hasta:
+        return jsonify(ok=False, error="Demasiados intentos. Espera unos minutos."), 429
+    d = request.get_json(silent=True) or {}
+    u, p = str(d.get("usuario", "")), str(d.get("clave", ""))
+    ok = hmac.compare_digest(u.encode(), USUARIO.encode()) & hmac.compare_digest(p.encode(), (CLAVE or "").encode())
+    if ok:
+        intentos.pop(ip, None)
+        session.clear()
+        session.permanent = True
+        session["ok"] = True
+        return jsonify(ok=True)
+    fallos += 1
+    intentos[ip] = (fallos, time.time() + 300 if fallos >= 5 else 0)
+    time.sleep(1)  # frena a quien prueba claves rápido
+    return jsonify(ok=False, error="Usuario o contraseña incorrectos"), 401
+
+
+@app.post("/api/logout")
+def api_logout():
+    session.clear()
+    return jsonify(ok=True)
 
 def pct(raw):
     p = (cfg["suelo_seco"] - raw) / (cfg["suelo_seco"] - cfg["suelo_humedo"]) * 100
